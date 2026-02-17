@@ -1,10 +1,24 @@
 import express, { Request, Response } from "express";
+import cors from "cors";
+import subjectRouter from "./routes/subjects";
 
 const app = express();
 const PORT = 8000;
 
 // JSON middleware
 app.use(express.json());
+app.use(cors ({
+ origin: process.env.FRONTEND_URL || 'http://localhost:3000', 
+ methods: ['GET', 'POST', 'PUT', 'DELETE'],
+//  allowedHeaders: ['Content-Type', 'Authorization'],
+ credentials: true,
+}));
+
+app.use('/api/subjects', subjectRouter);
+
+
+
+
 
 // Root route
 app.get("/", (req: Request, res: Response) => {
