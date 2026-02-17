@@ -12,9 +12,8 @@ router.get('/', async (req, res) => {
     const { search, department, page = 1, limit = 10 } = req.query;
 
     // set current page and page size with default values 
-    const currentPage = Math.max(1, +page);
-    const limitPage = Math.max(1, +limit);
-    
+    const currentPage = Math.max(1, Number(page) || 1);
+    const limitPage = Math.max(1, Math.min(Number(limit) || 10, 100)); // Also cap max limit    
 
     // offset calculation for pagination
     const offset = (currentPage - 1) * limitPage;
@@ -34,9 +33,8 @@ router.get('/', async (req, res) => {
 
     // If department filter is provided, add a condition to filter subjects by department ID
     if (department){
-        filterConditions.push(ilike(departments.name, `%${departments}%`));
+        filterConditions.push(ilike(departments.name, `%${department}%`));
     }
-
   
     // Combine all filters using AND if any exist 
     const whereClause = filterConditions.length > 0 ? and(...filterConditions) : undefined;
