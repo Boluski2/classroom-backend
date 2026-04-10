@@ -1,48 +1,149 @@
 import { relations } from "drizzle-orm";
-import { integer, pgTable, varchar, timestamp } from "drizzle-orm/pg-core";
+import {
+  integer,
+  jsonb,
+  index,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  varchar,
+} from "drizzle-orm/pg-core";
+import { user } from "./auth";
 
-// This file defines the database schema for the application using Drizzle ORM's PostgreSQL core. We have two main tables: departments and subjects, with a one-to-many relationship between them. Each table includes fields for code, name, description, and timestamps for tracking creation and updates. Unique constraints ensure data integrity, and foreign key relationships maintain referential integrity between departments and subjects.
 const timestamps = {
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 };
 
-// Departments are the top-level organizational units, and subjects belong to departments. We use unique constraints on code and name to ensure data integrity, and we include timestamps for tracking creation and updates.
+export const classStatusEnum = pgEnum("class_status", [
+  "active",
+  "inactive",
+  "archived",
+]);
+
 export const departments = pgTable("departments", {
-  id: integer ("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   code: varchar("code", { length: 50 }).notNull().unique(),
-  name: varchar("name", { length: 255 }).notNull().unique(),
-  description: varchar("description", { length: 255 }),
-  ...timestamps
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+
+  ...timestamps,
 });
 
+export const subjects = pgTable("subjects", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
 
-// Subjects belong to a department, so we have a foreign key reference to departments.id with onDelete: "restrict" to prevent deleting a department that has subjects.
-export const subject = pgTable("subject", {
-  id: integer ("id").primaryKey().generatedAlwaysAsIdentity(),
-  departmentsId: integer("departmentId").notNull().references(() => departments.id, { onDelete: "restrict" }),
-  name: varchar("name", { length: 255 }).notNull().unique(),
+  departmentId: integer("department_id")
+    .notNull()
+    .references(() => departments.id, { onDelete: "restrict" }),
+
+  name: varchar("name", { length: 255 }).notNull(),
   code: varchar("code", { length: 50 }).notNull().unique(),
-  description: varchar("description", { length: 255 }),
-  ...timestamps
+  description: text("description"),
+
+  ...timestamps,
 });
 
+export const classes = pgTable(
+  "classes",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
 
-// Relations to enable easy joins and nested queries with Drizzle ORM's relation helpers 
-export const departmentRelations = relations(departments, ({ many }) => ({
-  subjects: many(subject)
+    subjectId: integer("subject_id")
+      .notNull()
+      .references(() => subjects.id, { onDelete: "cascade" }),
+    teacherId: text("teacher_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+
+    inviteCode: varchar("invite_code", { length: 50 }).notNull().unique(),
+    name: varchar("name", { length: 255 }).notNull(),
+    bannerCldPubId: text("banner_cld_pub_id"),
+    bannerUrl: text("banner_url"),
+    capacity: integer("capacity").notNull().default(50),
+    description: text("description"),
+    status: classStatusEnum("status").notNull().default("active"),
+    schedules: jsonb("schedules").$type<Schedule[]>().notNull(),
+
+    ...timestamps,
+  },
+  (table) => ({
+    subjectIdIdx: index("classes_subject_id_idx").on(table.subjectId),
+    teacherIdIdx: index("classes_teacher_id_idx").on(table.teacherId),
+  })
+);
+
+export const enrollments = pgTable(
+  "enrollments",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+
+    studentId: text("student_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    classId: integer("class_id")
+      .notNull()
+      .references(() => classes.id, { onDelete: "cascade" }),
+
+    ...timestamps,
+  },
+  (table) => ({
+    studentIdIdx: index("enrollments_student_id_idx").on(table.studentId),
+    classIdIdx: index("enrollments_class_id_idx").on(table.classId),
+    studentClassUnique: index("enrollments_student_class_unique").on(
+      table.studentId,
+      table.classId
+    ),
+  })
+);
+
+export const departmentsRelations = relations(departments, ({ many }) => ({
+  subjects: many(subjects),
 }));
 
-// subjectRelations defines the relationship from the subject's perspective, allowing us to easily access the associated department for each subject. The foreign key relationship is defined with fields and references to ensure referential integrity.
-export const subjectRelations = relations(subject, ({ one }) => ({
+export const subjectsRelations = relations(subjects, ({ one, many }) => ({
   department: one(departments, {
-    fields: [subject.departmentsId],
-    references: [departments.id]
-  })
+    fields: [subjects.departmentId],
+    references: [departments.id],
+  }),
+  classes: many(classes),
+}));
+
+export const classesRelations = relations(classes, ({ one, many }) => ({
+  subject: one(subjects, {
+    fields: [classes.subjectId],
+    references: [subjects.id],
+  }),
+  teacher: one(user, {
+    fields: [classes.teacherId],
+    references: [user.id],
+  }),
+  enrollments: many(enrollments),
+}));
+
+export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
+  student: one(user, {
+    fields: [enrollments.studentId],
+    references: [user.id],
+  }),
+  class: one(classes, {
+    fields: [enrollments.classId],
+    references: [classes.id],
+  }),
 }));
 
 export type Department = typeof departments.$inferSelect;
 export type NewDepartment = typeof departments.$inferInsert;
 
-export type Subject = typeof subject.$inferSelect;
-export type NewSubject = typeof subject.$inferInsert;
+export type Subject = typeof subjects.$inferSelect;
+export type NewSubject = typeof subjects.$inferInsert;
+
+export type Class = typeof classes.$inferSelect;
+export type NewClass = typeof classes.$inferInsert;
+
+export type Enrollment = typeof enrollments.$inferSelect;
+export type NewEnrollment = typeof enrollments.$inferInsert;

@@ -8,6 +8,13 @@
       "when": 1770805445628,
       "tag": "0000_public_secret_warriors",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1775835291255,
+      "tag": "0001_wide_lightspeed",
+      "breakpoints": true
     }
   ]
 }
