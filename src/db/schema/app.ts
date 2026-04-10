@@ -1,12 +1,13 @@
 import { relations } from "drizzle-orm";
 import {
   integer,
-  jsonb,
   index,
+  jsonb,
   pgEnum,
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   varchar,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth";
@@ -24,6 +25,12 @@ export const classStatusEnum = pgEnum("class_status", [
   "inactive",
   "archived",
 ]);
+
+type ClassSchedule = {
+  day: string;
+  startTime: string;
+  endTime: string;
+};
 
 export const departments = pgTable("departments", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
@@ -67,7 +74,7 @@ export const classes = pgTable(
     capacity: integer("capacity").notNull().default(50),
     description: text("description"),
     status: classStatusEnum("status").notNull().default("active"),
-    schedules: jsonb("schedules").$type<Schedule[]>().notNull(),
+    schedules: jsonb("schedules").$type<ClassSchedule[]>().notNull(),
 
     ...timestamps,
   },

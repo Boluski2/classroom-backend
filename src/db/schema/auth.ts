@@ -22,7 +22,7 @@ export const roleEnum = pgEnum("role", ["student", "teacher", "admin"]);
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
-  email: text("email").notNull(),
+  email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull(),
   image: text("image"),
   role: roleEnum("role").notNull().default("student"),
@@ -37,7 +37,7 @@ export const session = pgTable(
     id: text("id").primaryKey(),
     userId: text("user_id")
       .notNull()
-      .references(() => user.id),
+      .references(() => user.id, { onDelete: "cascade" }),
     token: text("token").notNull(),
     expiresAt: timestamp("expires_at").notNull(),
     ipAddress: text("ip_address"),
@@ -57,7 +57,7 @@ export const account = pgTable(
     id: text("id").primaryKey(),
     userId: text("user_id")
       .notNull()
-      .references(() => user.id),
+      .references(() => user.id, { onDelete: "cascade" }),
     accountId: text("account_id").notNull(),
     providerId: text("provider_id").notNull(),
     accessToken: text("access_token"),
@@ -124,6 +124,3 @@ export type NewAccount = typeof account.$inferInsert;
 
 export type Verification = typeof verification.$inferSelect;
 export type NewVerification = typeof verification.$inferInsert;
-
-
-// 5:13:22
