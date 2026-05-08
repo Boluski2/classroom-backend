@@ -67,7 +67,6 @@ export const classes = pgTable(
     capacity: integer("capacity").notNull().default(50),
     description: text("description"),
     status: classStatusEnum("status").notNull().default("active"),
-    schedules: jsonb("schedules").$type<Schedule[]>().notNull(),
 
     ...timestamps,
   },
@@ -147,3 +146,6 @@ export type NewClass = typeof classes.$inferInsert;
 
 export type Enrollment = typeof enrollments.$inferSelect;
 export type NewEnrollment = typeof enrollments.$inferInsert;
+
+
+// 5:17:13
