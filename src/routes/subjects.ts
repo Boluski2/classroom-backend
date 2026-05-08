@@ -1,6 +1,6 @@
 import express from 'express';
 import { and, desc, eq, getTableColumns, ilike, or, sql } from 'drizzle-orm';
-import { departments, subject } from '../db/schema';
+import { departments, subjects } from '../db/schema';
 import { db } from '../db/index.js';
 
 const router = express.Router();
@@ -25,8 +25,8 @@ router.get('/', async (req, res) => {
     if (search) {
         filterConditions.push(
             or(
-                ilike(subject.name, `%${search}%`),
-                ilike(subject.code, `%${search}%`)
+                ilike(subjects.name, `%${search}%`),
+                ilike(subjects.code, `%${search}%`)
             )
         );
     }
@@ -41,19 +41,19 @@ router.get('/', async (req, res) => {
 
     const countResult  =  await  db
         .select({ count: sql<number>`count(*)` })
-        .from(subject)
-        .leftJoin(departments, eq(subject.departmentsId, departments.id))
+        .from(subjects)
+        .leftJoin(departments, eq(subjects.departmentId, departments.id))
         .where(whereClause);
 
     const totalItems = countResult[0]?.count ?? 0;
 
     // Query the database to get subjects with applied filters, pagination and sorting by creation date
     const subjectsList = await db
-      .select({...getTableColumns(subject),
+      .select({...getTableColumns(subjects),
         department: {...getTableColumns(departments)}
-      }).from(subject).leftJoin(departments, eq(subject.departmentsId, departments.id))
+      }).from(subjects).leftJoin(departments, eq(subjects.departmentId, departments.id))
       .where(whereClause)
-      .orderBy(desc(subject.createdAt))
+      .orderBy(desc(subjects.createdAt))
       .limit(limitPage)
       .offset(offset);
         
