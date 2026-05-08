@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 import subjectRouter from "./routes/subjects";
+import authMiddleware from "./middleware/auth";
 import securityMiddleware from "./middleware/security";
 
 const app = express();
@@ -15,7 +16,7 @@ app.use(cors ({
  credentials: true,
 }));
 
-
+app.use(authMiddleware);
 app.use(securityMiddleware);
 
 

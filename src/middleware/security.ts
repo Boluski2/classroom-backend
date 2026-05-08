@@ -1,14 +1,14 @@
-import { Arcjet, ArcjetNodeRequest, slidingWindow } from "@arcjet/node";
+import { ArcjetNodeRequest, slidingWindow } from "@arcjet/node";
 import type {Request, Response, NextFunction } from "express";
 import aj from "../config/arcjet";
-
+import RatelimitRole from "../type";
 const securityMiddleware = async (req: Request, res: Response, next: NextFunction) => {
 
     if (process.env.NODE_ENV === "test") return next();
 
    try {
     
-    const role: RatelimiteRole = req.user?.role ?? "guest";
+    const role: RatelimitRole = req.user?.role ?? "guest";
    
     let limit: number;
     let message: string;
@@ -49,19 +49,18 @@ const securityMiddleware = async (req: Request, res: Response, next: NextFunctio
     const decision = await client.protect(arcjetRequest);
 
     if (decision.isDenied() && decision.reason.isBot()) {
-        res.status(403).json({ error: "Forbidden", message: "Autonomous request are not allowed" });
+        return res.status(403).json({ error: "Forbidden", message: "Autonomous requests are not allowed" });
     }
 
-        if (decision.isDenied() && decision.reason.isShield()) {
-        res.status(403).json({ error: "Forbidden", message: "Request blocked by security rules" });
+    if (decision.isDenied() && decision.reason.isShield()) {
+        return res.status(403).json({ error: "Forbidden", message: "Request blocked by security rules" });
     }
 
-        if (decision.isDenied() && decision.reason.isRateLimit()) {
-        res.status(403).json({ error: "To many request", message });
+    if (decision.isDenied() && decision.reason.isRateLimit()) {
+        return res.status(429).json({ error: "Too many requests", message });
     }
 
     next();
-
    } catch (e) {
      console.error("Arcjet middleware error:", e);
      res.status(500).json({ error: "Internal error", message: "Something went wrong with security middleware" });

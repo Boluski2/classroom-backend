@@ -27,4 +27,3 @@ if (!process.env.ARCJET_KEY && process.env.ARCJET_ENV !== "test") {
 });
 
 export default aj;
-// 5:21:51
