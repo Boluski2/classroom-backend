@@ -3,9 +3,9 @@ AgentAPI.config()
 
 import express, { Request, Response } from "express";
 import cors from "cors";
-import subjectRouter from "./routes/subjects";
+import subjectRouter from "./routes/subjects.js";
 import authMiddleware from "./middleware/auth";
-import securityMiddleware from "./middleware/security";
+import securityMiddleware from "./middleware/security.js";
 
 const app = express();
 const PORT = 8000;
