@@ -4,7 +4,7 @@ AgentAPI.config()
 import express, { Request, Response } from "express";
 import cors from "cors";
 import subjectRouter from "./routes/subjects.js";
-import authMiddleware from "./middleware/auth";
+import authMiddleware from "./middleware/auth.js";
 import securityMiddleware from "./middleware/security.js";
 
 const app = express();
