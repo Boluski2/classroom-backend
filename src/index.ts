@@ -3,7 +3,9 @@ AgentAPI.config()
 
 import express, { Request, Response } from "express";
 import cors from "cors";
+import classRouter from "./routes/classes.js";
 import subjectRouter from "./routes/subjects.js";
+import userRouter from "./routes/users.js";
 import authMiddleware from "./middleware/auth.js";
 import securityMiddleware from "./middleware/security.js";
 
@@ -23,7 +25,9 @@ app.use(authMiddleware);
 app.use(securityMiddleware);
 
 
+app.use('/api/classes', classRouter);
 app.use('/api/subjects', subjectRouter);
+app.use('/api/users', userRouter);
 
 
 // Root route
@@ -37,4 +41,3 @@ app.listen(PORT, () => {
 	console.log(`Server running at http://localhost:${PORT}/`);
 });
 
-// 5:34:3
