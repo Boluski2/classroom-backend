@@ -133,10 +133,9 @@ router.get("/:id", async (req, res) => {
   try {
     const classId = Number(req.params.id);
 
-    if (!Number.isFinite(classId)) {
-      return res.status(400).json({ error: "Invalid class id" });
+    if (!Number.isFinite(classId) || classId <= 0 || !Number.isInteger(classId)) {
+      return res.status(400).json({ error: 'Invalid class id' });
     }
-
     const [classDetails] = await db
       .select({
         ...getTableColumns(classes),
