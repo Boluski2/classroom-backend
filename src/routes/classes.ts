@@ -129,7 +129,7 @@ router.post('/', async (req, res) => {
 
 
 // Get class details with counts
-router.get("/:id", async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const classId = Number(req.params.id);
 
@@ -156,13 +156,13 @@ router.get("/:id", async (req, res) => {
       .where(eq(classes.id, classId));
 
     if (!classDetails) {
-      return res.status(404).json({ error: "Class not found" });
+      return res.status(404).json({ error: 'Class not found' });
     }
 
     res.status(200).json({ data: classDetails });
   } catch (error) {
-    console.error("GET /classes/:id error:", error);
-    res.status(500).json({ error: "Failed to fetch class details" });
+    console.error('GET /classes/:id error:', error);
+    res.status(500).json({ error: 'Failed to fetch class details' });
   }
 });
 
