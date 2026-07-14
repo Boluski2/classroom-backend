@@ -3,7 +3,10 @@ AgentAPI.config()
 
 import express, { Request, Response } from "express";
 import cors from "cors";
+import authRouter from "./routes/auth.js";
+import { auth } from "./lib/auth.js";
 import classRouter from "./routes/classes.js";
+import departmentRouter from "./routes/departments.js";
 import subjectRouter from "./routes/subjects.js";
 import userRouter from "./routes/users.js";
 import authMiddleware from "./middleware/auth.js";
@@ -21,11 +24,15 @@ app.use(cors ({
  credentials: true,
 }));
 
+// Auth routes (public, before auth middleware)
+app.use('/api/auth', authRouter);
+
 app.use(authMiddleware);
 app.use(securityMiddleware);
 
-
+// All routes
 app.use('/api/classes', classRouter);
+app.use('/api/departments', departmentRouter);
 app.use('/api/subjects', subjectRouter);
 app.use('/api/users', userRouter);
 
