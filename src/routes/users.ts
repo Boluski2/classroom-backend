@@ -1,7 +1,9 @@
+import crypto from 'crypto';
 import express from 'express';
 import { and, desc, eq, getTableColumns, ilike, or, sql } from 'drizzle-orm';
 import { classes, departments, enrollments, subjects, user } from '../db/schema/index.js';
 import { db } from '../db/index.js';
+import { requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -57,30 +59,52 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireRole('admin'), async (req, res) => {
   try {
-    const { id, name, email, role, emailVerified = false } = req.body as {
+    const { id, name, email, role, emailVerified = false, password } = req.body as {
       id?: string;
       name?: string;
       email?: string;
       role?: 'student' | 'teacher' | 'admin';
       emailVerified?: boolean;
+      password?: string;
     };
 
-    if (!id || !name || !email) {
-      return res.status(400).json({ error: 'User id, name and email are required' });
+    if (!name || !email) {
+      return res.status(400).json({ error: 'User name and email are required' });
     }
+
+    if ((role === 'teacher' || role === 'admin') && !password) {
+      return res.status(400).json({ error: 'Password is required for teacher and admin accounts' });
+    }
+
+    const userId = id ?? crypto.randomUUID();
 
     const [createdUser] = await db
       .insert(user)
       .values({
-        id,
+        id: userId,
         name,
         email,
         role: role ?? 'student',
         emailVerified,
       })
       .returning({ id: user.id, name: user.name, email: user.email, role: user.role, emailVerified: user.emailVerified });
+
+    if (password) {
+      const hashedPassword = crypto
+        .createHash('sha256')
+        .update(password + process.env.BETTER_AUTH_SECRET)
+        .digest('hex');
+
+      await db.insert(db.schema.account).values({
+        id: crypto.randomUUID(),
+        userId,
+        accountId: email,
+        providerId: 'email',
+        password: hashedPassword,
+      });
+    }
 
     res.status(201).json({ data: createdUser });
   } catch (error) {
@@ -185,6 +209,45 @@ router.get('/:id/subjects', async (req, res) => {
   } catch (error) {
     console.error('GET /users/:id/subjects error:', error);
     res.status(500).json({ error: 'Failed to get user subjects' });
+  }
+});
+
+router.get('/:id/classes', async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    const roleFilter = await db.query.user.findFirst({
+      where: (fields, { eq }) => eq(fields.id, userId),
+    });
+
+    if (!roleFilter) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const classesForUser =
+      roleFilter.role === 'teacher'
+        ? await db
+            .select({
+              ...getTableColumns(classes),
+              subject: { ...getTableColumns(subjects) },
+            })
+            .from(classes)
+            .leftJoin(subjects, eq(classes.subjectId, subjects.id))
+            .where(eq(classes.teacherId, userId))
+        : await db
+            .select({
+              ...getTableColumns(classes),
+              subject: { ...getTableColumns(subjects) },
+            })
+            .from(enrollments)
+            .leftJoin(classes, eq(enrollments.classId, classes.id))
+            .leftJoin(subjects, eq(classes.subjectId, subjects.id))
+            .where(eq(enrollments.studentId, userId));
+
+    res.status(200).json({ data: classesForUser });
+  } catch (error) {
+    console.error('GET /users/:id/classes error:', error);
+    res.status(500).json({ error: 'Failed to fetch user classes' });
   }
 });
 

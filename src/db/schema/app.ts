@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import {
   integer,
   jsonb,
+  boolean,
   index,
   pgEnum,
   pgTable,
@@ -100,6 +101,34 @@ export const enrollments = pgTable(
   })
 );
 
+export const registrationCodes = pgTable(
+  "registration_codes",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    code: varchar("code", { length: 100 }).notNull().unique(),
+    classId: integer("class_id")
+      .notNull()
+      .references(() => classes.id, { onDelete: "cascade" }),
+    teacherId: text("teacher_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    subjectId: integer("subject_id")
+      .notNull()
+      .references(() => subjects.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at"),
+    usageLimit: integer("usage_limit"),
+    usesCount: integer("uses_count").default(0).notNull(),
+    active: boolean("active").default(true).notNull(),
+
+    ...timestamps,
+  },
+  (table) => ({
+    classIdIdx: index("registration_codes_class_id_idx").on(table.classId),
+    teacherIdIdx: index("registration_codes_teacher_id_idx").on(table.teacherId),
+    subjectIdIdx: index("registration_codes_subject_id_idx").on(table.subjectId),
+  })
+);
+
 export const departmentsRelations = relations(departments, ({ many }) => ({
   subjects: many(subjects),
 }));
@@ -124,6 +153,21 @@ export const classesRelations = relations(classes, ({ one, many }) => ({
   enrollments: many(enrollments),
 }));
 
+export const registrationCodesRelations = relations(registrationCodes, ({ one }) => ({
+  class: one(classes, {
+    fields: [registrationCodes.classId],
+    references: [classes.id],
+  }),
+  teacher: one(user, {
+    fields: [registrationCodes.teacherId],
+    references: [user.id],
+  }),
+  subject: one(subjects, {
+    fields: [registrationCodes.subjectId],
+    references: [subjects.id],
+  }),
+}));
+
 export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
   student: one(user, {
     fields: [enrollments.studentId],
@@ -143,6 +187,9 @@ export type NewSubject = typeof subjects.$inferInsert;
 
 export type Class = typeof classes.$inferSelect;
 export type NewClass = typeof classes.$inferInsert;
+
+export type RegistrationCode = typeof registrationCodes.$inferSelect;
+export type NewRegistrationCode = typeof registrationCodes.$inferInsert;
 
 export type Enrollment = typeof enrollments.$inferSelect;
 export type NewEnrollment = typeof enrollments.$inferInsert;

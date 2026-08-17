@@ -192,7 +192,7 @@
 
 // routes/auth.ts
 import { Router, Request, Response } from "express";
-import { db, user, session as sessionTable } from "../db/index.js";
+import { db, user, account, session as sessionTable } from "../db/index.js";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
 
@@ -205,6 +205,22 @@ function hashPassword(password: string): string {
 
 function verifyPassword(password: string, hash: string): boolean {
   return hashPassword(password) === hash;
+}
+
+function getSessionCookieString(token: string) {
+  const cookieParts = [
+    `better-auth.session_token=${token}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=None",
+    `Max-Age=${30 * 24 * 60 * 60}`,
+  ];
+
+  if (process.env.NODE_ENV === "production") {
+    cookieParts.push("Secure");
+  }
+
+  return cookieParts.join("; ");
 }
 
 // Sign up endpoint
@@ -241,6 +257,15 @@ authRouter.post("/sign-up/email", async (req: Request, res: Response) => {
       })
       .returning();
 
+    // Store email/password in account table for email login
+    await db.insert(account).values({
+      id: crypto.randomUUID(),
+      userId,
+      accountId: email,
+      providerId: "email",
+      password: hashedPassword,
+    });
+
     // Create session
     const sessionToken = crypto.randomBytes(32).toString("hex");
     const sessionId = crypto.randomUUID();
@@ -255,12 +280,7 @@ authRouter.post("/sign-up/email", async (req: Request, res: Response) => {
       userAgent: req.get("user-agent"),
     });
 
-    res.setHeader(
-      "Set-Cookie",
-      `better-auth.session_token=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}${
-        process.env.NODE_ENV === "production" ? "; Secure" : ""
-      }`
-    );
+    res.setHeader("Set-Cookie", getSessionCookieString(sessionToken));
 
     return res.json({
       user: {
@@ -288,17 +308,21 @@ authRouter.post("/sign-in/email", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Missing email or password" });
     }
 
-    // Find user - fixed type inference
+    const foundAccount = await db.query.account.findFirst({
+      where: (fields, { eq }) => eq(fields.accountId, email),
+    });
+
+    if (!foundAccount || !foundAccount.password || !verifyPassword(password, foundAccount.password)) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
     const foundUser = await db.query.user.findFirst({
-      where: (fields, { eq }) => eq(fields.email, email),
+      where: (fields, { eq }) => eq(fields.id, foundAccount.userId),
     });
 
     if (!foundUser) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
-
-    // For now, we'll skip password verification since passwords aren't stored in user table
-    // In production, check the account table for password
 
     // Create session
     const sessionToken = crypto.randomBytes(32).toString("hex");
@@ -314,12 +338,7 @@ authRouter.post("/sign-in/email", async (req: Request, res: Response) => {
       userAgent: req.get("user-agent"),
     });
 
-    res.setHeader(
-      "Set-Cookie",
-      `better-auth.session_token=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}${
-        process.env.NODE_ENV === "production" ? "; Secure" : ""
-      }`
-    );
+    res.setHeader("Set-Cookie", getSessionCookieString(sessionToken));
 
     return res.json({
       user: {
@@ -340,15 +359,24 @@ authRouter.post("/sign-in/email", async (req: Request, res: Response) => {
 
 // Sign out endpoint
 authRouter.post("/sign-out", (req: Request, res: Response) => {
-  res.setHeader(
-    "Set-Cookie",
-    "better-auth.session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 UTC;"
-  );
+  const cookieParts = [
+    "better-auth.session_token=;",
+    "Path=/",
+    "HttpOnly",
+    "SameSite=None",
+    "Expires=Thu, 01 Jan 1970 00:00:00 UTC",
+  ];
+
+  if (process.env.NODE_ENV === "production") {
+    cookieParts.push("Secure");
+  }
+
+  res.setHeader("Set-Cookie", cookieParts.filter(Boolean).join("; "));
   return res.json({ status: "signed out" });
 });
 
 // Get session endpoint
-authRouter.get("/session", async (req: Request, res: Response) => {
+authRouter.get("/get-session", async (req: Request, res: Response) => {
   try {
     const token =
       req.cookies?.["better-auth.session_token"] ||

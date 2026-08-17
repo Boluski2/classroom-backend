@@ -2,6 +2,7 @@ import express from 'express';
 import { and, desc, eq, getTableColumns, ilike, or, sql } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { classes, departments, enrollments, subjects, user } from '../db/schema/index.js';
+import { requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -74,7 +75,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireRole('admin'), async (req, res) => {
   try {
     const { subjectId, teacherId } = req.body as {
       subjectId?: number;
@@ -266,7 +267,7 @@ router.post('/:id/enroll', async (req, res) => {
   }
 });
 
-router.delete('/:id/enroll/:studentId', async (req, res) => {
+router.delete('/:id/enroll/:studentId', requireRole('admin', 'teacher'), async (req, res) => {
   try {
     const classId = Number(req.params.id);
     const studentId = req.params.studentId;
@@ -277,6 +278,17 @@ router.delete('/:id/enroll/:studentId', async (req, res) => {
 
     if (!studentId) {
       return res.status(400).json({ error: 'Student id is required' });
+    }
+
+    if (req.user?.role === 'teacher') {
+      const [classRow] = await db
+        .select({ teacherId: classes.teacherId })
+        .from(classes)
+        .where(eq(classes.id, classId));
+
+      if (!classRow || classRow.teacherId !== req.user.id) {
+        return res.status(403).json({ error: 'Not authorized to modify this class roster' });
+      }
     }
 
     await db
