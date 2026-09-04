@@ -1,11 +1,17 @@
 #!/usr/bin/env node
 import 'dotenv/config';
 import crypto from 'crypto';
+import { hashPassword } from 'better-auth/crypto';
 import { Client } from 'pg';
 
 const email = process.argv[2] || 'babatundebolu@gail.com';
-const password = process.argv[3] || 'Bolu1234';
+const password = process.argv[3];
 const name = process.argv[4] || 'Administrator';
+
+if (!password) {
+  console.error('Usage: node create-admin.js <email> <password> [name]');
+  process.exit(1);
+}
 
 if (!process.env.DATABASE_URL) {
   console.error('Please set DATABASE_URL in your environment or .env file');
@@ -17,10 +23,6 @@ if (!process.env.BETTER_AUTH_SECRET) {
   process.exit(1);
 }
 
-function hashPassword(pw) {
-  return crypto.createHash('sha256').update(pw + process.env.BETTER_AUTH_SECRET).digest('hex');
-}
-
 const client = new Client({ connectionString: process.env.DATABASE_URL });
 
 (async () => {
@@ -29,13 +31,44 @@ const client = new Client({ connectionString: process.env.DATABASE_URL });
 
     const res = await client.query('SELECT id FROM "user" WHERE email = $1', [email]);
     if (res.rows.length > 0) {
-      console.log('User with this email already exists:', email);
+      const userId = res.rows[0].id;
+      const accountId = crypto.randomUUID();
+      const hashed = await hashPassword(password);
+
+      await client.query('BEGIN');
+      await client.query(
+        'UPDATE "user" SET role = $1, updated_at = now() WHERE id = $2',
+        ['admin', userId]
+      );
+
+      const account = await client.query(
+        'SELECT id FROM "account" WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+
+      if (account.rows.length > 0) {
+        await client.query(
+          `UPDATE "account"
+           SET account_id = $1, provider_id = $2, password = $3, updated_at = now()
+           WHERE id = $4`,
+          [userId, 'credential', hashed, account.rows[0].id]
+        );
+      } else {
+        await client.query(
+          `INSERT INTO "account" (id, user_id, account_id, provider_id, password, created_at, updated_at)
+           VALUES ($1,$2,$3,$4,$5, now(), now())`,
+          [accountId, userId, userId, 'credential', hashed]
+        );
+      }
+
+      await client.query('COMMIT');
+      console.log('Repaired admin:', email);
       process.exit(0);
     }
 
     const userId = crypto.randomUUID();
     const accountId = crypto.randomUUID();
-    const hashed = hashPassword(password);
+    const hashed = await hashPassword(password);
 
     await client.query('BEGIN');
 
@@ -48,7 +81,7 @@ const client = new Client({ connectionString: process.env.DATABASE_URL });
     await client.query(
       `INSERT INTO "account" (id, user_id, account_id, provider_id, password, created_at, updated_at)
        VALUES ($1,$2,$3,$4,$5, now(), now())`,
-      [accountId, userId, email, 'email', hashed]
+      [accountId, userId, userId, 'credential', hashed]
     );
 
     await client.query('COMMIT');

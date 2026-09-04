@@ -1,13 +1,14 @@
 import crypto from 'crypto';
+import { hashPassword } from 'better-auth/crypto';
 import express from 'express';
 import { and, desc, eq, getTableColumns, ilike, or, sql } from 'drizzle-orm';
-import { classes, departments, enrollments, subjects, user } from '../db/schema/index.js';
+import { classes, departments, enrollments, subjects, user, account } from '../db/schema/index.js';
 import { db } from '../db/index.js';
 import { requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
+router.get('/', requireRole('admin', 'teacher'), async (req, res) => {
   try {
     const { search, role, page = 1, limit = 10 } = req.query;
 
@@ -92,16 +93,13 @@ router.post('/', requireRole('admin'), async (req, res) => {
       .returning({ id: user.id, name: user.name, email: user.email, role: user.role, emailVerified: user.emailVerified });
 
     if (password) {
-      const hashedPassword = crypto
-        .createHash('sha256')
-        .update(password + process.env.BETTER_AUTH_SECRET)
-        .digest('hex');
+      const hashedPassword = await hashPassword(password);
 
-      await db.insert(db.schema.account).values({
+      await db.insert(account).values({
         id: crypto.randomUUID(),
         userId,
-        accountId: email,
-        providerId: 'email',
+        accountId: userId,
+        providerId: 'credential',
         password: hashedPassword,
       });
     }
@@ -115,7 +113,7 @@ router.post('/', requireRole('admin'), async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const userId = req.params.id;
+    const userId = String(req.params.id);
 
     const [userRow] = await db.select({ ...getTableColumns(user) }).from(user).where(eq(user.id, userId));
 
@@ -130,9 +128,9 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireRole('admin'), async (req, res) => {
   try {
-    const userId = req.params.id;
+    const userId = String(req.params.id);
     const { name, email, role, emailVerified } = req.body as {
       name?: string;
       email?: string;
@@ -157,9 +155,9 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireRole('admin'), async (req, res) => {
   try {
-    const userId = req.params.id;
+    const userId = String(req.params.id);
     await db.delete(user).where(eq(user.id, userId));
     res.status(200).json({ data: { success: true } });
   } catch (error) {

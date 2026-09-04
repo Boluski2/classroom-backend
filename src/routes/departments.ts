@@ -2,6 +2,7 @@ import express from 'express';
 import { and, desc, eq, getTableColumns, ilike, or, sql } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { classes, departments, enrollments, subjects, user } from '../db/schema/index.js';
+import { requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -54,7 +55,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireRole('admin'), async (req, res) => {
   try {
     const { code, name, description } = req.body as {
       code?: string;
@@ -112,7 +113,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireRole('admin'), async (req, res) => {
   try {
     const departmentId = Number(req.params.id);
     const { code, name, description } = req.body as {
@@ -134,7 +135,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireRole('admin'), async (req, res) => {
   try {
     const departmentId = Number(req.params.id);
 

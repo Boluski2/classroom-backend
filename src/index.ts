@@ -14,6 +14,7 @@ import subjectRouter from "./routes/subjects.js";
 import userRouter from "./routes/users.js";
 import registrationCodeRouter from "./routes/registration-codes.js";
 import registerRouter from "./routes/register.js";
+import reportsRouter from "./routes/reports.js";
 import authMiddleware from "./middleware/auth.js";
 import securityMiddleware from "./middleware/security.js";
 
@@ -44,6 +45,7 @@ app.use('/api/departments', departmentRouter);
 app.use('/api/subjects', subjectRouter);
 app.use('/api/users', userRouter);
 app.use('/api/registration-codes', registrationCodeRouter);
+app.use('/api/reports', reportsRouter);
 
 // Root route
 app.get("/", (req: Request, res: Response) => {

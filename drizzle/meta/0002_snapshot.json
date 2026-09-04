@@ -1,0 +1,635 @@
+{
+  "id": "2",
+  "prevId": "1",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.user": {
+      "name": "user",
+      "schema": "public",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "text",
+          "isNullable": false,
+          "isPrimaryKey": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "text",
+          "isNullable": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "text",
+          "isNullable": false
+        },
+        "email_verified": {
+          "name": "email_verified",
+          "type": "boolean",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "boolean",
+          "isNullable": false
+        },
+        "image": {
+          "name": "image",
+          "type": "text",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "text",
+          "isNullable": true
+        },
+        "role": {
+          "name": "role",
+          "type": "role",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "role",
+          "isNullable": false,
+          "default": "'student'"
+        },
+        "image_cld_pub_id": {
+          "name": "image_cld_pub_id",
+          "type": "text",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "text",
+          "isNullable": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "timestamp",
+          "isNullable": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "timestamp",
+          "isNullable": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.departments": {
+      "name": "departments",
+      "schema": "public",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "integer",
+          "isNullable": false,
+          "identity": {
+            "type": "always",
+            "increment": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "start": "1",
+            "cache": "1"
+          },
+          "isPrimaryKey": true
+        },
+        "code": {
+          "name": "code",
+          "type": "varchar",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "varchar(50)",
+          "isNullable": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "varchar(255)",
+          "isNullable": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "text",
+          "isNullable": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "timestamp",
+          "isNullable": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "timestamp",
+          "isNullable": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "departments_code_unique": {
+          "name": "departments_code_unique",
+          "columns": ["code"]
+        }
+      }
+    },
+    "public.subjects": {
+      "name": "subjects",
+      "schema": "public",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "integer",
+          "isNullable": false,
+          "identity": {
+            "type": "always",
+            "increment": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "start": "1",
+            "cache": "1"
+          },
+          "isPrimaryKey": true
+        },
+        "department_id": {
+          "name": "department_id",
+          "type": "integer",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "integer",
+          "isNullable": false
+        },
+        "teacher_id": {
+          "name": "teacher_id",
+          "type": "text",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "text",
+          "isNullable": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "varchar(255)",
+          "isNullable": false
+        },
+        "code": {
+          "name": "code",
+          "type": "varchar",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "varchar(50)",
+          "isNullable": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "text",
+          "isNullable": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "timestamp",
+          "isNullable": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "timestamp",
+          "isNullable": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "subjects_teacher_id_idx": {
+          "name": "subjects_teacher_id_idx",
+          "columns": [
+            {
+              "expression": "teacher_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "concurrently": false,
+          "method": "btree",
+          "where": null
+        }
+      },
+      "foreignKeys": {
+        "subjects_department_id_departments_id_fk": {
+          "name": "subjects_department_id_departments_id_fk",
+          "tableFrom": "subjects",
+          "tableTo": "departments",
+          "columnsFrom": ["department_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "subjects_teacher_id_user_id_fk": {
+          "name": "subjects_teacher_id_user_id_fk",
+          "tableFrom": "subjects",
+          "tableTo": "user",
+          "columnsFrom": ["teacher_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "subjects_code_unique": {
+          "name": "subjects_code_unique",
+          "columns": ["code"]
+        }
+      }
+    },
+    "public.assignments": {
+      "name": "assignments",
+      "schema": "public",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "integer",
+          "isNullable": false,
+          "identity": {
+            "type": "always",
+            "increment": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "start": "1",
+            "cache": "1"
+          },
+          "isPrimaryKey": true
+        },
+        "class_id": {
+          "name": "class_id",
+          "type": "integer",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "integer",
+          "isNullable": false
+        },
+        "teacher_id": {
+          "name": "teacher_id",
+          "type": "text",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "text",
+          "isNullable": false
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "varchar(255)",
+          "isNullable": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "text",
+          "isNullable": true
+        },
+        "due_date": {
+          "name": "due_date",
+          "type": "timestamp",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "timestamp",
+          "isNullable": true
+        },
+        "points": {
+          "name": "points",
+          "type": "integer",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "integer",
+          "isNullable": false,
+          "default": "100"
+        },
+        "is_published": {
+          "name": "is_published",
+          "type": "boolean",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "boolean",
+          "isNullable": false,
+          "default": "false"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "timestamp",
+          "isNullable": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "timestamp",
+          "isNullable": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "assignments_class_id_idx": {
+          "name": "assignments_class_id_idx",
+          "columns": [
+            {
+              "expression": "class_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "concurrently": false,
+          "method": "btree",
+          "where": null
+        },
+        "assignments_teacher_id_idx": {
+          "name": "assignments_teacher_id_idx",
+          "columns": [
+            {
+              "expression": "teacher_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "concurrently": false,
+          "method": "btree",
+          "where": null
+        }
+      },
+      "foreignKeys": {
+        "assignments_class_id_classes_id_fk": {
+          "name": "assignments_class_id_classes_id_fk",
+          "tableFrom": "assignments",
+          "tableTo": "classes",
+          "columnsFrom": ["class_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "assignments_teacher_id_user_id_fk": {
+          "name": "assignments_teacher_id_user_id_fk",
+          "tableFrom": "assignments",
+          "tableTo": "user",
+          "columnsFrom": ["teacher_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.notifications": {
+      "name": "notifications",
+      "schema": "public",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "integer",
+          "isNullable": false,
+          "identity": {
+            "type": "always",
+            "increment": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "start": "1",
+            "cache": "1"
+          },
+          "isPrimaryKey": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "text",
+          "isNullable": false
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "varchar(255)",
+          "isNullable": true
+        },
+        "message": {
+          "name": "message",
+          "type": "text",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "text",
+          "isNullable": true
+        },
+        "type": {
+          "name": "type",
+          "type": "notification_type",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "notification_type",
+          "isNullable": false
+        },
+        "related_id": {
+          "name": "related_id",
+          "type": "integer",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "integer",
+          "isNullable": true
+        },
+        "is_read": {
+          "name": "is_read",
+          "type": "boolean",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "boolean",
+          "isNullable": false,
+          "default": "false"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "timestamp",
+          "isNullable": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "typeSchema": "public",
+          "isArray": false,
+          "columnType": "timestamp",
+          "isNullable": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "notifications_user_id_idx": {
+          "name": "notifications_user_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "concurrently": false,
+          "method": "btree",
+          "where": null
+        },
+        "notifications_is_read_idx": {
+          "name": "notifications_is_read_idx",
+          "columns": [
+            {
+              "expression": "is_read",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "concurrently": false,
+          "method": "btree",
+          "where": null
+        }
+      },
+      "foreignKeys": {
+        "notifications_user_id_user_id_fk": {
+          "name": "notifications_user_id_user_id_fk",
+          "tableFrom": "notifications",
+          "tableTo": "user",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    }
+  },
+  "enums": {
+    "public.role": {
+      "name": "role",
+      "schema": "public",
+      "values": ["student", "teacher", "admin"]
+    },
+    "public.class_status": {
+      "name": "class_status",
+      "schema": "public",
+      "values": ["active", "inactive", "archived"]
+    },
+    "public.attendance_status": {
+      "name": "attendance_status",
+      "schema": "public",
+      "values": ["present", "absent", "late"]
+    },
+    "public.report_type": {
+      "name": "report_type",
+      "schema": "public",
+      "values": ["performance", "incident", "progress"]
+    },
+    "public.report_status": {
+      "name": "report_status",
+      "schema": "public",
+      "values": ["draft", "submitted", "reviewed"]
+    },
+    "public.notification_type": {
+      "name": "notification_type",
+      "schema": "public",
+      "values": [
+        "class_started",
+        "assignment_published",
+        "assignment_deadline",
+        "assignment_graded",
+        "assessment_available",
+        "assessment_completed",
+        "announcement",
+        "schedule_change",
+        "teacher_added",
+        "code_shared"
+      ]
+    }
+  },
+  "schemas": {},
+  "_meta": {
+    "columns": {},
+    "tables": {},
+    "indexes": {}
+  }
+}

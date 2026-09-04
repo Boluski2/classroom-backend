@@ -15,6 +15,13 @@
       "when": 1775835291255,
       "tag": "0001_wide_lightspeed",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792432200000,
+      "tag": "0002_complete_schema_update",
+      "breakpoints": true
     }
   ]
 }

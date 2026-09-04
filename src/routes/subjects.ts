@@ -2,6 +2,7 @@ import express from 'express';
 import { and, desc, eq, getTableColumns, ilike, or, sql } from 'drizzle-orm';
 import { classes, departments, enrollments, subjects, user } from '../db/schema/index.js';
 import { db } from '../db/index.js';
+import { authMiddleware, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -64,7 +65,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, requireRole('teacher'), async (req, res) => {
   try {
     const { departmentId, name, code, description } = req.body as {
       departmentId?: number;
@@ -77,10 +78,14 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Department, name and code are required' });
     }
 
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     const [createdSubject] = await db
       .insert(subjects)
-      .values({ departmentId, name, code, description: description ?? null })
-      .returning({ id: subjects.id, name: subjects.name, code: subjects.code });
+      .values({ departmentId, name, code, description: description ?? null, teacherId: req.user.id })
+      .returning({ id: subjects.id, name: subjects.name, code: subjects.code, teacherId: subjects.teacherId });
 
     res.status(201).json({ data: createdSubject });
   } catch (error) {
@@ -126,7 +131,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, requireRole('teacher'), async (req, res) => {
   try {
     const subjectId = Number(req.params.id);
     const { departmentId, name, code, description } = req.body as {
@@ -136,15 +141,26 @@ router.put('/:id', async (req, res) => {
       description?: string;
     };
 
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Verify teacher owns this subject
+    const [existingSubject] = await db.select().from(subjects).where(eq(subjects.id, subjectId));
+    
+    if (!existingSubject) {
+      return res.status(404).json({ error: 'Subject not found' });
+    }
+
+    if (existingSubject.teacherId !== req.user.id) {
+      return res.status(403).json({ error: 'You can only update subjects you own' });
+    }
+
     const [updatedSubject] = await db
       .update(subjects)
       .set({ departmentId, name, code, description: description ?? null })
       .where(eq(subjects.id, subjectId))
       .returning({ id: subjects.id, name: subjects.name, code: subjects.code });
-
-    if (!updatedSubject) {
-      return res.status(404).json({ error: 'Subject not found' });
-    }
 
     res.status(200).json({ data: updatedSubject });
   } catch (error) {
@@ -153,9 +169,25 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, requireRole('teacher'), async (req, res) => {
   try {
     const subjectId = Number(req.params.id);
+
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Verify teacher owns this subject
+    const [existingSubject] = await db.select().from(subjects).where(eq(subjects.id, subjectId));
+    
+    if (!existingSubject) {
+      return res.status(404).json({ error: 'Subject not found' });
+    }
+
+    if (existingSubject.teacherId !== req.user.id) {
+      return res.status(403).json({ error: 'You can only delete subjects you own' });
+    }
+
     await db.delete(subjects).where(eq(subjects.id, subjectId));
     res.status(200).json({ data: { success: true } });
   } catch (error) {
@@ -184,10 +216,29 @@ router.get('/:id/classes', async (req, res) => {
   }
 });
 
-router.get('/:id/users', async (req, res) => {
+router.get('/:id/users', requireRole('admin', 'teacher'), async (req, res) => {
   try {
     const subjectId = Number(req.params.id);
     const role = req.query.role as 'teacher' | 'student' | undefined;
+
+    if (!Number.isInteger(subjectId) || subjectId <= 0) {
+      return res.status(400).json({ error: 'Invalid subject id' });
+    }
+
+    if (req.user?.role === 'teacher') {
+      const [subjectRow] = await db
+        .select({ teacherId: subjects.teacherId })
+        .from(subjects)
+        .where(eq(subjects.id, subjectId));
+
+      if (!subjectRow) {
+        return res.status(404).json({ error: 'Subject not found' });
+      }
+
+      if (subjectRow.teacherId !== req.user.id) {
+        return res.status(403).json({ error: 'You can only view users in your subjects' });
+      }
+    }
 
     if (role === 'teacher') {
       const teachers = await db

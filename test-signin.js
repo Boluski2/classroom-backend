@@ -4,7 +4,7 @@ import 'dotenv/config';
   try {
     const res = await global.fetch('http://localhost:8000/api/auth/sign-in/email', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Origin': 'http://localhost:5174' },
+      headers: { 'Content-Type': 'application/json', 'Origin': 'http://localhost:5173' },
       body: JSON.stringify({ email: 'babatundebolu@gail.com', password: 'Bolu1234' }),
     });
 

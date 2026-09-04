@@ -9,7 +9,7 @@ const client = new Client({ connectionString: process.env.DATABASE_URL });
     await client.connect();
     const u = await client.query('SELECT * FROM "user" WHERE email = $1', [email]);
     console.log('user rows:', u.rows);
-    const a = await client.query('SELECT * FROM "account" WHERE account_id = $1', [email]);
+    const a = await client.query('SELECT * FROM "account" WHERE user_id = $1', [u.rows[0]?.id]);
     console.log('account rows:', a.rows);
   } catch (err) {
     console.error('error', err);

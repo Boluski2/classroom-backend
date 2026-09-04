@@ -8,14 +8,16 @@ const router = express.Router();
 
 router.post('/', requireRole('admin'), async (req, res) => {
   try {
-    const { classId, studentId } = req.body as {
+    const { classId: classIdRaw, studentId } = req.body as {
       classId?: number;
       studentId?: string;
     };
 
-    if (!Number.isInteger(classId) || classId <= 0) {
+    if (typeof classIdRaw !== 'number' || !Number.isInteger(classIdRaw) || classIdRaw <= 0) {
       return res.status(400).json({ error: 'Invalid class id' });
     }
+
+    const classId = classIdRaw;
 
     if (!studentId) {
       return res.status(400).json({ error: 'Student id is required' });
@@ -64,6 +66,10 @@ router.post('/join', requireRole('student'), async (req, res) => {
   try {
     const studentId = req.user?.id;
     const { inviteCode } = req.body as { inviteCode?: string };
+
+    if (!studentId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
 
     if (!inviteCode) {
       return res.status(400).json({ error: 'Invite code is required' });
@@ -131,7 +137,7 @@ router.post('/join', requireRole('student'), async (req, res) => {
     await db
       .update(registrationCodes)
       .set({
-        usesCount: registrationCodes.usesCount.plus(1),
+        usesCount: sql<number>`${registrationCodes.usesCount} + 1`,
         active:
           codeRow.usageLimit !== null && codeRow.usesCount + 1 >= codeRow.usageLimit
             ? false
@@ -146,10 +152,10 @@ router.post('/join', requireRole('student'), async (req, res) => {
   }
 });
 
-router.delete('/:classId/:studentId', async (req, res) => {
+router.delete('/:classId/:studentId', requireRole('admin', 'teacher'), async (req, res) => {
   try {
     const classId = Number(req.params.classId);
-    const studentId = req.params.studentId;
+    const studentId = String(req.params.studentId);
 
     if (!Number.isInteger(classId) || classId <= 0) {
       return res.status(400).json({ error: 'Invalid class id' });
@@ -157,6 +163,19 @@ router.delete('/:classId/:studentId', async (req, res) => {
 
     if (!studentId) {
       return res.status(400).json({ error: 'Student id is required' });
+    }
+
+    const [classRow] = await db
+      .select({ teacherId: classes.teacherId })
+      .from(classes)
+      .where(eq(classes.id, classId));
+
+    if (!classRow) {
+      return res.status(404).json({ error: 'Class not found' });
+    }
+
+    if (req.user?.role === 'teacher' && classRow.teacherId !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized to modify this class roster' });
     }
 
     await db

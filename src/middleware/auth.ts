@@ -1,11 +1,11 @@
 import type { Request, Response, NextFunction } from "express";
-import { db, session as sessionTable, user } from "../db/index.js";
-import { eq } from "drizzle-orm";
+import { fromNodeHeaders } from "better-auth/node";
+import { auth } from "../lib/auth.js";
 
 type UserRole = "admin" | "teacher" | "student";
 const validRoles: UserRole[] = ["admin", "teacher", "student"];
 
-const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   const token =
     req.cookies?.["better-auth.session_token"] ||
     (typeof req.headers.authorization === "string"
@@ -14,16 +14,15 @@ const authMiddleware = async (req: Request, res: Response, next: NextFunction) =
 
   if (token) {
     try {
-      const foundSession = await db.query.session.findFirst({
-        where: (fields, { eq }) => eq(fields.token, token),
-        with: { user: true },
+      const session = await auth.api.getSession({
+        headers: fromNodeHeaders(req.headers),
       });
 
-      if (foundSession && foundSession.user) {
-        const role = foundSession.user.role;
+      if (session?.user) {
+        const role = session.user.role;
         if (validRoles.includes(role as UserRole)) {
           req.user = {
-            id: foundSession.user.id,
+            id: session.user.id,
             role: role as UserRole,
           };
         }

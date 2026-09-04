@@ -155,7 +155,7 @@ router.post('/', async (req, res) => {
 
     res.status(201).json({
       data: {
-        user: createdUser[0] ?? null,
+        user: createdUser ?? null,
         session: { token: sessionToken },
       },
     });
